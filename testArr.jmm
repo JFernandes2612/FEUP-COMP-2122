@@ -1,0 +1,51 @@
+import io;
+class Simple {
+    int i;
+
+    public boolean r(boolean k) {
+        return k;
+    }
+
+    public int printArr(int[] arr) {
+        io.println(arr[0]);
+        io.println(arr[1]);
+        io.println(arr[2]);
+        io.println(arr[3]);
+        io.println(arr[4]);
+        io.println();
+
+        return 0;
+    }
+
+    public int[] multarr(int[] arr) {
+        int[] arrR;
+
+        arrR = new int[5];
+
+        arrR[0] = arr[0] * 2;
+        arrR[1] = arr[1] * 2;
+        arrR[2] = arr[2] * 2;
+        arrR[3] = arr[3] * 2;
+        arrR[4] = arr[4] * 2;
+        return arrR;
+    }
+
+    public static void main(String[] args){
+        Simple s;
+        int[] arr;
+        int[] arrR;
+
+        arr = new int[5];
+        arr[0] = 2;
+        arr[1] = 3;
+        arr[2] = 4;
+        arr[3] = 5;
+        arr[4] = 6;
+
+        s = new Simple();
+
+        arrR = s.multarr(arr);
+        s.printArr(arr);
+        s.printArr(arrR);
+    }
+}

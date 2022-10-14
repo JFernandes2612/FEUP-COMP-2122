@@ -1,0 +1,15 @@
+class Test {
+	int i;
+	int[] field;
+	public static void main(String[] args) {
+		Test t;
+		t = new Test();
+
+		t.lol(1);
+	}
+
+	public int lol(int i) {
+		field = new int[10];
+		return i+2;
+	}
+}

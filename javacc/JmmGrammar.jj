@@ -1,0 +1,215 @@
+PARSER_PACKAGE=pt.up.fe.comp;
+PARSER_CLASS=JmmGrammarParser;
+TOKENS_ARE_NODES = false;
+SMART_NODE_CREATION=false;
+
+SKIP : " " | "\t" | "\r" | "\n" | <"//" (~["\n"])*> | <"/*" (~["*"])* "*" (~["*","/"] (~["*"])* "*" | "*")* "/" >
+| <"/*" ( ~["*"] | ("*")+ ~["*","/"] )* ("*")*>;
+
+
+TOKEN :
+	< PLUS : "+" > |
+	< MINUS : "-" > |
+	< MULT : "*" > |
+	< DIVIDE : "/" > |
+	< OPEN_PAREN : "(" > |
+	< CLOSE_PAREN : ")" > |
+	< OPEN_SQR_BRACK : "[" > |
+	< CLOSE_SQR_BRACK : "]" > |
+	< OPEN_CURL_BRACK : "{" > |
+	< CLOSE_CURL_BRACK : "}" > |
+	< INTEGER : (["0" - "9"])+ > |
+	< EQUAL : "=" > |
+	< DOT : "." > |
+	< COMMA : "," > |
+	< SEMI_COLON : ";" > |
+	< IF : "if" > |
+	< ELSE : "else" > |
+	< WHILE : "while" > |
+	< IMPORT : "import" > |
+	< CLASS : "class" > |
+	< PUBLIC : "public" > |
+	< STATIC : "static" > |
+	< VOID : "void" > |
+	< EXTENDS : "extends" > |
+	< MAIN : "main" > |
+	< STRING : "String" > |
+	< RETURN : "return" > |
+	< INT : "int" > |
+	< BOOLEAN : "boolean" > |
+	< TRUE  : "true" > |
+	< FALSE  : "false" > |
+	< THIS : "this" > |
+	< LENGTH : "length" > |
+	< NEW : "new" > |
+	< IDENTIFIER : ["A" - "Z", "a" - "z", "_", "$"](["0" - "9", "A" - "Z", "a" - "z", "_", "$"])* > |
+	< LESS : "<" > |
+	< AND : "&&" > |
+	< NOT : "!" >
+;
+
+Program :
+	(ImportDeclaration)* ClassDeclaration <EOF> ;
+
+ImportDeclaration :
+	< IMPORT > < IDENTIFIER > ({jjtThis.put("name", lastConsumedToken.getImage());}) #Id ImportDeclarationMore < SEMI_COLON >
+;
+
+ImportDeclarationMore #void:
+	(< DOT > < IDENTIFIER > ({jjtThis.put("name", lastConsumedToken.getImage());}) #Id)*
+;
+
+ClassDeclaration :
+	< CLASS > < IDENTIFIER > ({jjtThis.put("name", lastConsumedToken.getImage());}) (< EXTENDS > < IDENTIFIER > ({jjtThis.put("extends", lastConsumedToken.getImage());}))? < OPEN_CURL_BRACK > (VarDeclaration)* (MethodDeclaration)* < CLOSE_CURL_BRACK >
+;
+
+
+VarDeclaration : SCAN 2 Type < IDENTIFIER > ({jjtThis.put("name", lastConsumedToken.getImage());}) < SEMI_COLON > ;
+
+
+MethodDeclaration #void :
+	SCAN 2 MainMethodDeclaration |
+	PublicMethodDeclaration
+;
+
+MainMethodDeclaration #MethodDeclaration:
+	< PUBLIC > < STATIC > < VOID > ({jjtThis.put("type", "void");}) #Type < MAIN > ({jjtThis.put("name", "main");}) < OPEN_PAREN > MainMethodArg #MethodArgs < CLOSE_PAREN > < OPEN_CURL_BRACK > ((VarDeclaration)* #VarDeclarations) ((Statement)* #Body) < CLOSE_CURL_BRACK >
+;
+
+MainMethodArg #void:
+	(< STRING > ({jjtThis.put("type", "stringArr");}) #Type) < OPEN_SQR_BRACK > < CLOSE_SQR_BRACK > < IDENTIFIER > ({jjtThis.put("name", lastConsumedToken.getImage());}) #VarDeclaration(1)
+;
+
+PublicMethodDeclaration #MethodDeclaration:
+	< PUBLIC > Type < IDENTIFIER > ({jjtThis.put("name", lastConsumedToken.getImage());}) < OPEN_PAREN > (PublicMethodArgs)? #MethodArgs < CLOSE_PAREN > < OPEN_CURL_BRACK > ((VarDeclaration)* #VarDeclarations) ((Statement)* #Body) < RETURN > Expression < SEMI_COLON > < CLOSE_CURL_BRACK >
+;
+
+PublicMethodArgs #void:
+	(Type < IDENTIFIER > ({jjtThis.put("name", lastConsumedToken.getImage());}) #VarDeclaration(1)) (< COMMA > Type < IDENTIFIER > ({jjtThis.put("name", lastConsumedToken.getImage());}) #VarDeclaration(1))*
+;
+
+Type :
+	SCAN 2 < INT > ({jjtThis.put("type", "intArr");}) < OPEN_SQR_BRACK > < CLOSE_SQR_BRACK > |
+	< INT > ({jjtThis.put("type", "int");}) |
+	< BOOLEAN > ({jjtThis.put("type", "boolean");}) |
+	< STRING > ({jjtThis.put("type", "string");}) |
+	< IDENTIFIER > ({jjtThis.put("type", lastConsumedToken.getImage());})
+;
+
+Statement #void:
+	Scope |
+	IfStatement |
+	WhileStatement |
+	SCAN 2 Attribution |
+	SCAN 2 ArrIndexAttribution |
+	SCAN 2 Expression #ExprStmt < SEMI_COLON >
+;
+
+Scope :
+	< OPEN_CURL_BRACK > (Statement)* < CLOSE_CURL_BRACK >
+;
+
+Attribution :
+	< IDENTIFIER > ({jjtThis.put("name", lastConsumedToken.getImage());}) #Id < EQUAL > Expression < SEMI_COLON >
+;
+
+ArrIndexAttribution :
+	< IDENTIFIER > ({jjtThis.put("name", lastConsumedToken.getImage());}) #Id < OPEN_SQR_BRACK > Expression < CLOSE_SQR_BRACK > < EQUAL > Expression < SEMI_COLON >
+;
+
+IfStatement :
+	<IF> < OPEN_PAREN > Expression < CLOSE_PAREN > Statement ElseStatement
+;
+
+ElseStatement :
+	<ELSE> Statement
+;
+
+WhileStatement :
+	<WHILE> < OPEN_PAREN > Expression < CLOSE_PAREN > Statement
+;
+
+Expression #void:
+	AndExpr
+;
+
+AndExpr #void:
+	LessExp ((<AND> LessExp {jjtThis.put("op","&&");}) #BinOP(2) )*
+;
+
+LessExp #void:
+	AddMinusExp ((<LESS> AddMinusExp {jjtThis.put("op","<");}) #BinOP(2) )*
+;
+
+AddMinusExp #void:
+	MultDivExp (((<PLUS> | <MINUS>) {jjtThis.put("op", lastConsumedToken.getImage());} MultDivExp) #BinOP(2) )*
+;
+
+MultDivExp #void:
+	Terminal (((<MULT> | <DIVIDE>) {jjtThis.put("op",lastConsumedToken.getImage());} Terminal) #BinOP(2) )*
+;
+
+Terminal #void:
+	((< INTEGER > ({jjtThis.put("value", lastConsumedToken.getImage());})) #IntLiteral |
+	(< TRUE > ({jjtThis.put("value", "true");})) #BooleanType |
+	(< FALSE > ({jjtThis.put("value", "false");})) #BooleanType |
+	< THIS > #ThisExpr |
+	(< IDENTIFIER > ({jjtThis.put("name", lastConsumedToken.getImage());})) #Id |
+	NotExpr |
+	< OPEN_PAREN > Expression < CLOSE_PAREN > |
+	SCAN 2 NewIntArrVarAttribution |
+	NewClassAttribution)
+	(TerminalExtension)*
+;
+
+NotExpr:
+	< NOT > Expression
+;
+
+NewIntArrVarAttribution:
+	< NEW > < INT > < OPEN_SQR_BRACK > Expression < CLOSE_SQR_BRACK >
+;
+
+NewClassAttribution:
+	< NEW > < IDENTIFIER > ({jjtThis.put("name", lastConsumedToken.getImage());}) #Id < OPEN_PAREN > < CLOSE_PAREN >
+;
+
+TerminalExtension #void:
+	SCAN 2 <DOT> <LENGTH> #LengthMethod(1) |
+	<DOT> <IDENTIFIER> MethodCall |
+	Indexing
+;
+
+Indexing #Indexing(2):
+	<OPEN_SQR_BRACK> Expression <CLOSE_SQR_BRACK>
+;
+
+MethodCall #MethodCall(2):
+	({jjtThis.put("name", lastConsumedToken.getImage());}) <OPEN_PAREN> Args <CLOSE_PAREN>
+;
+
+Args :
+	(Expression (<COMMA> Expression)*)?
+;
+
+// Injections for the implementation of JmmNode
+// Since this is injected into BaseNode, it affects only non-terminals
+INJECT BaseNode :
+        import pt.up.fe.comp.jmm.ast.JmmNode;
+        import pt.up.fe.comp.jmm.ast.AJmmNode;
+        import pt.up.fe.specs.util.SpecsCollections;
+        extends AJmmNode
+{
+    @Override
+    public List<JmmNode> getChildren() {
+        return SpecsCollections.cast(children(), JmmNode.class);
+    }
+    @Override
+    public void add(JmmNode child, int index) {
+        if (child instanceof Node) {
+            addChild(index, (Node) child);
+        } else {
+            throw new RuntimeException("Node " + child + " is not a Node.");
+        }
+    }
+}
